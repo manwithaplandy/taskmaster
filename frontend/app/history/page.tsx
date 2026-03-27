@@ -7,9 +7,14 @@ import { getTaskHistory } from "@/lib/api";
 import TaskCard from "@/components/TaskCard";
 import type { Task } from "@/lib/types";
 
+const PAGE_SIZE = 20;
+
 export default function HistoryPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
   const router = useRouter();
 
   useEffect(() => {
@@ -22,12 +27,23 @@ export default function HistoryPage() {
         return;
       }
 
-      const history = await getTaskHistory();
+      const history = await getTaskHistory(1, PAGE_SIZE);
       setTasks(history);
+      setHasMore(history.length === PAGE_SIZE);
       setLoading(false);
     };
     load();
   }, [router]);
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    const moreTasks = await getTaskHistory(nextPage, PAGE_SIZE);
+    setTasks((prev) => [...prev, ...moreTasks]);
+    setPage(nextPage);
+    setHasMore(moreTasks.length === PAGE_SIZE);
+    setLoadingMore(false);
+  };
 
   if (loading) {
     return (
@@ -49,6 +65,15 @@ export default function HistoryPage() {
           {tasks.map((task) => (
             <TaskCard key={task.id} task={task} showFeedback />
           ))}
+          {hasMore && (
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="w-full py-3 bg-surface-light border border-primary/20 text-text-muted hover:text-text disabled:opacity-50 font-semibold rounded-xl transition-colors"
+            >
+              {loadingMore ? "Loading..." : "Load More"}
+            </button>
+          )}
         </div>
       )}
     </div>

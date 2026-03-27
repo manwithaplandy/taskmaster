@@ -95,12 +95,7 @@ router.post(
         return;
       }
 
-      const submission =
-        task.submission_type === "image"
-          ? `[User submitted an image: ${image_url}]`
-          : text || "";
-
-      if (!submission) {
+      if (task.submission_type === "image" ? !image_url : !text) {
         res.status(400).json({ error: "Submission content required" });
         return;
       }
@@ -112,29 +107,26 @@ router.post(
         task.difficulty,
         task.max_points,
         task.submission_type,
-        submission
+        text || undefined,
+        image_url || undefined
       );
 
-      // Update task
-      const { data: updatedTask } = await supabase
-        .from("tasks")
-        .update({
-          status: "completed",
-          points_awarded: evaluation.points,
-          evaluation_feedback: evaluation.feedback,
-          submission_text: text || null,
-          submission_image_url: image_url || null,
-          completed_at: new Date().toISOString(),
-        })
-        .eq("id", id)
-        .select()
-        .single();
-
-      // Update profile: add points, increment completed, reset skips
-      await supabase.rpc("update_profile_on_completion", {
+      // Atomically update task and profile in one transaction
+      await supabase.rpc("complete_task", {
+        p_task_id: id,
         p_user_id: req.userId!,
         p_points: evaluation.points,
+        p_feedback: evaluation.feedback,
+        p_submission_text: text || null,
+        p_submission_image_url: image_url || null,
       });
+
+      // Fetch the updated task to return to the client
+      const { data: updatedTask } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("id", id)
+        .single();
 
       res.json({
         points: evaluation.points,
@@ -180,23 +172,19 @@ router.post(
       const currentSkips = profile?.consecutive_skips || 0;
       const penalty = -(currentSkips + 1);
 
-      // Update task status
-      const { data: updatedTask } = await supabase
-        .from("tasks")
-        .update({
-          status: "skipped",
-          points_awarded: penalty,
-          completed_at: new Date().toISOString(),
-        })
-        .eq("id", id)
-        .select()
-        .single();
-
-      // Update profile atomically
-      await supabase.rpc("update_profile_on_skip", {
+      // Atomically update task and profile in one transaction
+      await supabase.rpc("skip_task", {
+        p_task_id: id,
         p_user_id: req.userId!,
         p_penalty: penalty,
       });
+
+      // Fetch the updated task to return to the client
+      const { data: updatedTask } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("id", id)
+        .single();
 
       res.json({
         penalty,
@@ -215,15 +203,19 @@ router.get(
   "/history",
   requireAuth,
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const offset = (page - 1) * limit;
+
     const { data: tasks } = await supabase
       .from("tasks")
       .select("*")
       .eq("user_id", req.userId!)
       .neq("status", "active")
       .order("completed_at", { ascending: false })
-      .limit(50);
+      .range(offset, offset + limit - 1);
 
-    res.json({ tasks: tasks || [] });
+    res.json({ tasks: tasks || [], page, limit });
   }
 );
 

@@ -9,23 +9,43 @@ import type {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
+// Cache session token via auth state listener to avoid per-request getSession() calls
+let cachedToken: string | null = null;
+supabase.auth.getSession().then(({ data: { session } }) => {
+  cachedToken = session?.access_token ?? null;
+});
+supabase.auth.onAuthStateChange((_event, session) => {
+  cachedToken = session?.access_token ?? null;
+});
+
 async function apiFetch<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const token = session?.access_token;
+  const token = cachedToken;
 
-  const res = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options?.headers,
-    },
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options?.headers,
+      },
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -43,12 +63,8 @@ export async function generateTask(): Promise<Task> {
 }
 
 export async function getActiveTask(): Promise<Task | null> {
-  try {
-    const data = await apiFetch<{ task: Task | null }>("/api/tasks/active");
-    return data.task;
-  } catch {
-    return null;
-  }
+  const data = await apiFetch<{ task: Task | null }>("/api/tasks/active");
+  return data.task;
 }
 
 export async function submitTask(
@@ -67,8 +83,8 @@ export async function skipTask(taskId: string): Promise<SkipResult> {
   });
 }
 
-export async function getTaskHistory(): Promise<Task[]> {
-  const data = await apiFetch<{ tasks: Task[] }>("/api/tasks/history");
+export async function getTaskHistory(page = 1, limit = 20): Promise<Task[]> {
+  const data = await apiFetch<{ tasks: Task[] }>(`/api/tasks/history?page=${page}&limit=${limit}`);
   return data.tasks;
 }
 
@@ -80,10 +96,6 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
 }
 
 export async function getProfile(): Promise<Profile | null> {
-  try {
-    const data = await apiFetch<{ profile: Profile }>("/api/profile");
-    return data.profile;
-  } catch {
-    return null;
-  }
+  const data = await apiFetch<{ profile: Profile }>("/api/profile");
+  return data.profile;
 }

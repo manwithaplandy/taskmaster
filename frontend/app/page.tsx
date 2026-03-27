@@ -17,24 +17,30 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  useEffect(() => {
-    const init = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
+  const loadUserData = async () => {
+    setError("");
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    setUser(user);
 
-      if (user) {
+    if (user) {
+      try {
         const [task, prof] = await Promise.all([
           getActiveTask(),
           getProfile(),
         ]);
         setActiveTask(task);
         setProfile(prof);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load data");
       }
-      setLoading(false);
-    };
-    init();
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadUserData();
   }, []);
 
   const handleGenerate = async () => {
@@ -112,7 +118,15 @@ export default function HomePage() {
       )}
 
       {error && (
-        <p className="text-center text-hard text-sm">{error}</p>
+        <div className="text-center space-y-2">
+          <p className="text-hard text-sm">{error}</p>
+          <button
+            onClick={() => { setError(""); handleGenerate(); }}
+            className="text-primary-light hover:underline text-sm"
+          >
+            Try Again
+          </button>
+        </div>
       )}
     </div>
   );
