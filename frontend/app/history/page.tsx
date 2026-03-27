@@ -48,28 +48,37 @@ export default function HistoryPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-2 border-accent border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-center">Task History</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-center bg-gradient-to-r from-accent to-accent-light bg-clip-text text-transparent animate-fade-in-up">
+        Task History
+      </h1>
       {tasks.length === 0 ? (
-        <p className="text-center text-text-muted py-8">
-          No completed tasks yet. Go generate one!
-        </p>
+        <div className="text-center py-12 space-y-2 animate-fade-in-up">
+          <p className="text-xl font-bold text-text">Your quest log is empty</p>
+          <p className="text-text-muted">Go generate a task and start earning points!</p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} showFeedback />
+          {tasks.map((task, index) => (
+            <div
+              key={task.id}
+              className="animate-fade-in-up"
+              style={{ animationDelay: `${index * 0.05}s` }}
+            >
+              <TaskCard task={task} showFeedback />
+            </div>
           ))}
           {hasMore && (
             <button
               onClick={loadMore}
               disabled={loadingMore}
-              className="w-full py-3 bg-surface-light border border-primary/20 text-text-muted hover:text-text disabled:opacity-50 font-semibold rounded-xl transition-colors"
+              className="w-full py-3 bg-surface-light border border-primary/20 text-text-muted hover:text-text hover:-translate-y-0.5 disabled:opacity-50 font-semibold rounded-xl transition-all duration-200"
             >
               {loadingMore ? "Loading..." : "Load More"}
             </button>

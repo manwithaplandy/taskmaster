@@ -25,7 +25,7 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 bg-surface/80 backdrop-blur-md border-b border-primary/20">
-      <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+      <div className="max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
         <Link href="/" className="text-xl font-bold text-accent">
           Taskmaster
         </Link>

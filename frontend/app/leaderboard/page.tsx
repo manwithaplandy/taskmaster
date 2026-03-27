@@ -27,14 +27,16 @@ export default function LeaderboardPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-2 border-accent border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-center">Leaderboard</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-center bg-gradient-to-r from-accent to-accent-light bg-clip-text text-transparent animate-fade-in-up">
+        Leaderboard
+      </h1>
       <LeaderboardTable entries={entries} currentUserId={userId} />
     </div>
   );
