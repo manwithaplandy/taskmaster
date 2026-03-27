@@ -25,7 +25,7 @@ export default function RootLayout({
       <body className="min-h-screen">
         <Navbar />
         <ErrorBoundary>
-          <main className="max-w-lg mx-auto px-4 py-6">{children}</main>
+          <main className="max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">{children}</main>
         </ErrorBoundary>
       </body>
     </html>

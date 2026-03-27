@@ -97,7 +97,13 @@ export default function SubmissionForm({
             Upload your photo proof
           </label>
           <label className="block w-full cursor-pointer">
-            <div className="border-2 border-dashed border-primary/30 rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
+            <div
+              className={`border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 ${
+                imagePreview
+                  ? "border-solid border-primary/50 bg-primary/5"
+                  : "border-primary/30 hover:border-accent/50 hover:bg-accent/5"
+              }`}
+            >
               {imagePreview ? (
                 <img
                   src={imagePreview}
@@ -130,7 +136,7 @@ export default function SubmissionForm({
             onChange={(e) => setText(e.target.value)}
             placeholder="Write your response here..."
             rows={4}
-            className="w-full px-3 py-2 bg-surface-light border border-primary/30 rounded-xl text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary resize-none"
+            className="w-full px-3 py-2 bg-surface-light border border-primary/30 rounded-xl text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary-light focus:ring-2 focus:ring-primary/20 focus:shadow-[var(--shadow-glow-purple)] resize-none transition-all duration-200"
           />
         </div>
       )}
@@ -143,7 +149,7 @@ export default function SubmissionForm({
         <button
           type="submit"
           disabled={!isValid || submitting}
-          className="flex-1 py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-light hover:to-primary disabled:opacity-50 text-white font-semibold rounded-xl transition-all"
+          className="flex-1 py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-light hover:to-primary disabled:opacity-50 disabled:shadow-none text-white font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
         >
           {submitting ? "Submitting..." : "Submit"}
         </button>
@@ -153,14 +159,14 @@ export default function SubmissionForm({
               type="button"
               onClick={handleSkip}
               disabled={skipping}
-              className="px-3 py-3 bg-hard/20 border border-hard/50 text-hard hover:bg-hard/30 disabled:opacity-50 font-semibold rounded-xl transition-colors text-sm"
+              className="px-3 py-3 bg-hard/20 border border-hard/50 text-hard hover:bg-hard/30 hover:-translate-y-0.5 disabled:opacity-50 font-semibold rounded-xl transition-all duration-200 text-sm"
             >
-              {skipping ? "..." : `−${skipPenalty} pts`}
+              {skipping ? "..." : `\u2212${skipPenalty} pts`}
             </button>
             <button
               type="button"
               onClick={() => setShowSkipConfirm(false)}
-              className="px-3 py-3 bg-surface-light border border-primary/20 text-text-muted hover:text-text font-semibold rounded-xl transition-colors text-sm"
+              className="px-3 py-3 bg-surface-light border border-primary/20 text-text-muted hover:text-text hover:-translate-y-0.5 font-semibold rounded-xl transition-all duration-200 text-sm"
             >
               Cancel
             </button>
@@ -170,7 +176,7 @@ export default function SubmissionForm({
             type="button"
             onClick={handleSkip}
             disabled={skipping}
-            className="px-4 py-3 bg-surface-light border border-hard/30 text-hard hover:bg-hard/10 disabled:opacity-50 font-semibold rounded-xl transition-colors"
+            className="px-4 py-3 bg-surface-light border border-hard/30 text-hard hover:bg-hard/10 hover:-translate-y-0.5 disabled:opacity-50 font-semibold rounded-xl transition-all duration-200"
           >
             Skip
           </button>

@@ -77,14 +77,14 @@ export default function TaskPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-2 border-accent border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (!task) {
     return (
-      <div className="text-center py-12 space-y-4">
+      <div className="text-center py-12 space-y-4 animate-fade-in-up">
         <p className="text-text-muted">Task not found.</p>
         <button
           onClick={() => router.push("/")}
@@ -99,17 +99,18 @@ export default function TaskPage() {
   // Show result after completion
   if (result) {
     return (
-      <div className="space-y-6 pt-4">
-        <div className="text-center space-y-2">
-          <p className="text-3xl font-extrabold text-accent">
+      <div className="space-y-6 pt-4 animate-fade-in-up">
+        <div className="text-center space-y-3">
+          <p className="text-4xl sm:text-5xl font-extrabold text-accent animate-scale-bounce animate-pulse-glow">
             +{result.points} points!
           </p>
-          <p className="text-text-muted">The Taskmaster has spoken.</p>
+          <div className="w-16 h-1 bg-accent rounded-full mx-auto" />
+          <p className="text-text-muted text-lg">The Taskmaster has spoken.</p>
         </div>
         <TaskCard task={task} showFeedback />
         <button
           onClick={() => router.push("/")}
-          className="w-full py-3 bg-primary hover:bg-primary-light text-white font-semibold rounded-xl transition-colors"
+          className="w-full py-3 bg-primary hover:bg-primary-light text-white font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all"
         >
           Next Task
         </button>
@@ -120,18 +121,19 @@ export default function TaskPage() {
   // Show skip result
   if (skipPenalty !== null) {
     return (
-      <div className="space-y-6 pt-4">
-        <div className="text-center space-y-2">
-          <p className="text-3xl font-extrabold text-hard">
+      <div className="space-y-6 pt-4 animate-fade-in-up">
+        <div className="text-center space-y-3">
+          <p className="text-4xl sm:text-5xl font-extrabold text-hard animate-scale-bounce drop-shadow-[0_0_12px_rgba(239,68,68,0.4)]">
             {skipPenalty} points
           </p>
-          <p className="text-text-muted">
+          <div className="w-16 h-1 bg-hard rounded-full mx-auto" />
+          <p className="text-text-muted text-lg italic">
             The Taskmaster is disappointed. Consecutive skips cost more!
           </p>
         </div>
         <button
           onClick={() => router.push("/")}
-          className="w-full py-3 bg-primary hover:bg-primary-light text-white font-semibold rounded-xl transition-colors"
+          className="w-full py-3 bg-primary hover:bg-primary-light text-white font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all"
         >
           Try Another Task
         </button>
@@ -140,7 +142,7 @@ export default function TaskPage() {
   }
 
   return (
-    <div className="space-y-6 pt-2">
+    <div className="space-y-6 pt-2 animate-fade-in-up">
       <TaskCard task={task} />
       {error && (
         <p className="text-hard text-sm text-center">{error}</p>
