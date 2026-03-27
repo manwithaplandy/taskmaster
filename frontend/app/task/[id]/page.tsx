@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase-browser";
-import { submitTask, skipTask, getActiveTask } from "@/lib/api";
+import { submitTask, skipTask, getActiveTask, getProfile } from "@/lib/api";
 import TaskCard from "@/components/TaskCard";
 import SubmissionForm from "@/components/SubmissionForm";
 import type { Task } from "@/lib/types";
@@ -17,7 +17,9 @@ export default function TaskPage() {
     feedback: string;
   } | null>(null);
   const [skipPenalty, setSkipPenalty] = useState<number | null>(null);
+  const [consecutiveSkips, setConsecutiveSkips] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -29,12 +31,20 @@ export default function TaskPage() {
         return;
       }
 
-      const active = await getActiveTask();
-      if (active && active.id === id) {
-        setTask(active);
-      } else if (active) {
-        router.push(`/task/${active.id}`);
-        return;
+      try {
+        const [active, profile] = await Promise.all([
+          getActiveTask(),
+          getProfile(),
+        ]);
+        if (profile) setConsecutiveSkips(profile.consecutive_skips);
+        if (active && active.id === id) {
+          setTask(active);
+        } else if (active) {
+          router.push(`/task/${active.id}`);
+          return;
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load task");
       }
       setLoading(false);
     };
@@ -46,6 +56,7 @@ export default function TaskPage() {
     image_url?: string;
   }) => {
     if (!task) return;
+    setError("");
     const evaluation = await submitTask(task.id, submission);
     setResult({ points: evaluation.points, feedback: evaluation.feedback });
     setTask(evaluation.task);
@@ -53,9 +64,14 @@ export default function TaskPage() {
 
   const handleSkip = async () => {
     if (!task) return;
-    const skipResult = await skipTask(task.id);
-    setSkipPenalty(skipResult.penalty);
-    setTask(skipResult.task);
+    setError("");
+    try {
+      const skipResult = await skipTask(task.id);
+      setSkipPenalty(skipResult.penalty);
+      setTask(skipResult.task);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to skip task");
+    }
   };
 
   if (loading) {
@@ -126,7 +142,10 @@ export default function TaskPage() {
   return (
     <div className="space-y-6 pt-2">
       <TaskCard task={task} />
-      <SubmissionForm task={task} onSubmit={handleSubmit} onSkip={handleSkip} />
+      {error && (
+        <p className="text-hard text-sm text-center">{error}</p>
+      )}
+      <SubmissionForm task={task} consecutiveSkips={consecutiveSkips} onSubmit={handleSubmit} onSkip={handleSkip} />
     </div>
   );
 }

@@ -18,14 +18,28 @@ async function apiFetch<T>(
   } = await supabase.auth.getSession();
   const token = session?.access_token;
 
-  const res = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options?.headers,
-    },
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options?.headers,
+      },
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -43,12 +57,8 @@ export async function generateTask(): Promise<Task> {
 }
 
 export async function getActiveTask(): Promise<Task | null> {
-  try {
-    const data = await apiFetch<{ task: Task | null }>("/api/tasks/active");
-    return data.task;
-  } catch {
-    return null;
-  }
+  const data = await apiFetch<{ task: Task | null }>("/api/tasks/active");
+  return data.task;
 }
 
 export async function submitTask(
@@ -80,10 +90,6 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
 }
 
 export async function getProfile(): Promise<Profile | null> {
-  try {
-    const data = await apiFetch<{ profile: Profile }>("/api/profile");
-    return data.profile;
-  } catch {
-    return null;
-  }
+  const data = await apiFetch<{ profile: Profile }>("/api/profile");
+  return data.profile;
 }

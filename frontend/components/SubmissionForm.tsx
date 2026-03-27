@@ -6,12 +6,14 @@ import type { Task } from "@/lib/types";
 
 interface SubmissionFormProps {
   task: Task;
+  consecutiveSkips: number;
   onSubmit: (submission: { text?: string; image_url?: string }) => Promise<void>;
   onSkip: () => Promise<void>;
 }
 
 export default function SubmissionForm({
   task,
+  consecutiveSkips,
   onSubmit,
   onSkip,
 }: SubmissionFormProps) {
@@ -20,11 +22,17 @@ export default function SubmissionForm({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [skipping, setSkipping] = useState(false);
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false);
   const [error, setError] = useState("");
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        setError("Image must be under 10MB.");
+        return;
+      }
+      setError("");
       setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => setImagePreview(reader.result as string);
@@ -63,13 +71,20 @@ export default function SubmissionForm({
   };
 
   const handleSkip = async () => {
+    if (!showSkipConfirm) {
+      setShowSkipConfirm(true);
+      return;
+    }
     setSkipping(true);
     try {
       await onSkip();
     } finally {
       setSkipping(false);
+      setShowSkipConfirm(false);
     }
   };
+
+  const skipPenalty = consecutiveSkips + 1;
 
   const isValid =
     task.submission_type === "image" ? !!imageFile : text.trim().length > 0;
@@ -132,14 +147,34 @@ export default function SubmissionForm({
         >
           {submitting ? "Submitting..." : "Submit"}
         </button>
-        <button
-          type="button"
-          onClick={handleSkip}
-          disabled={skipping}
-          className="px-4 py-3 bg-surface-light border border-hard/30 text-hard hover:bg-hard/10 disabled:opacity-50 font-semibold rounded-xl transition-colors"
-        >
-          {skipping ? "..." : "Skip"}
-        </button>
+        {showSkipConfirm ? (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleSkip}
+              disabled={skipping}
+              className="px-3 py-3 bg-hard/20 border border-hard/50 text-hard hover:bg-hard/30 disabled:opacity-50 font-semibold rounded-xl transition-colors text-sm"
+            >
+              {skipping ? "..." : `−${skipPenalty} pts`}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowSkipConfirm(false)}
+              className="px-3 py-3 bg-surface-light border border-primary/20 text-text-muted hover:text-text font-semibold rounded-xl transition-colors text-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleSkip}
+            disabled={skipping}
+            className="px-4 py-3 bg-surface-light border border-hard/30 text-hard hover:bg-hard/10 disabled:opacity-50 font-semibold rounded-xl transition-colors"
+          >
+            Skip
+          </button>
+        )}
       </div>
     </form>
   );
