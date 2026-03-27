@@ -43,6 +43,9 @@ CREATE INDEX idx_tasks_user_id ON public.tasks(user_id);
 CREATE INDEX idx_tasks_status ON public.tasks(status);
 CREATE INDEX idx_profiles_total_points ON public.profiles(total_points DESC);
 
+-- Composite index for the frequent (user_id, status) lookup
+CREATE INDEX idx_tasks_user_status ON public.tasks(user_id, status);
+
 -- Prevent duplicate active tasks per user
 CREATE UNIQUE INDEX idx_one_active_task_per_user ON public.tasks(user_id) WHERE status = 'active';
 

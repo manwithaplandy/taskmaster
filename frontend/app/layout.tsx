@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: "Taskmaster - Silly Tasks, Serious Points",
@@ -23,7 +24,9 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen">
         <Navbar />
-        <main className="max-w-lg mx-auto px-4 py-6">{children}</main>
+        <ErrorBoundary>
+          <main className="max-w-lg mx-auto px-4 py-6">{children}</main>
+        </ErrorBoundary>
       </body>
     </html>
   );

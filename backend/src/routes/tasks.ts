@@ -203,15 +203,19 @@ router.get(
   "/history",
   requireAuth,
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const offset = (page - 1) * limit;
+
     const { data: tasks } = await supabase
       .from("tasks")
       .select("*")
       .eq("user_id", req.userId!)
       .neq("status", "active")
       .order("completed_at", { ascending: false })
-      .limit(50);
+      .range(offset, offset + limit - 1);
 
-    res.json({ tasks: tasks || [] });
+    res.json({ tasks: tasks || [], page, limit });
   }
 );
 
