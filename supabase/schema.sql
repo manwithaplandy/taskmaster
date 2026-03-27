@@ -43,6 +43,9 @@ CREATE INDEX idx_tasks_user_id ON public.tasks(user_id);
 CREATE INDEX idx_tasks_status ON public.tasks(status);
 CREATE INDEX idx_profiles_total_points ON public.profiles(total_points DESC);
 
+-- Prevent duplicate active tasks per user
+CREATE UNIQUE INDEX idx_one_active_task_per_user ON public.tasks(user_id) WHERE status = 'active';
+
 -- RLS Policies
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
@@ -68,7 +71,7 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- RPC: Update profile on task completion
+-- RPC: Update profile on task completion (kept for backward compatibility)
 CREATE OR REPLACE FUNCTION public.update_profile_on_completion(p_user_id UUID, p_points INTEGER)
 RETURNS VOID AS $$
 BEGIN
@@ -80,10 +83,67 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- RPC: Update profile on task skip
+-- RPC: Update profile on task skip (kept for backward compatibility)
 CREATE OR REPLACE FUNCTION public.update_profile_on_skip(p_user_id UUID, p_penalty INTEGER)
 RETURNS VOID AS $$
 BEGIN
+  UPDATE public.profiles
+  SET total_points = total_points + p_penalty,
+      consecutive_skips = consecutive_skips + 1
+  WHERE id = p_user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- RPC: Atomically complete a task and update profile in one transaction
+CREATE OR REPLACE FUNCTION public.complete_task(
+  p_task_id UUID,
+  p_user_id UUID,
+  p_points INTEGER,
+  p_feedback TEXT,
+  p_submission_text TEXT DEFAULT NULL,
+  p_submission_image_url TEXT DEFAULT NULL
+)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE public.tasks
+  SET status = 'completed',
+      points_awarded = p_points,
+      evaluation_feedback = p_feedback,
+      submission_text = p_submission_text,
+      submission_image_url = p_submission_image_url,
+      completed_at = NOW()
+  WHERE id = p_task_id AND user_id = p_user_id AND status = 'active';
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Active task not found';
+  END IF;
+
+  UPDATE public.profiles
+  SET total_points = total_points + p_points,
+      tasks_completed = tasks_completed + 1,
+      consecutive_skips = 0
+  WHERE id = p_user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- RPC: Atomically skip a task and update profile in one transaction
+CREATE OR REPLACE FUNCTION public.skip_task(
+  p_task_id UUID,
+  p_user_id UUID,
+  p_penalty INTEGER
+)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE public.tasks
+  SET status = 'skipped',
+      points_awarded = p_penalty,
+      completed_at = NOW()
+  WHERE id = p_task_id AND user_id = p_user_id AND status = 'active';
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Active task not found';
+  END IF;
+
   UPDATE public.profiles
   SET total_points = total_points + p_penalty,
       consecutive_skips = consecutive_skips + 1

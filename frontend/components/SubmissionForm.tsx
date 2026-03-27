@@ -20,6 +20,7 @@ export default function SubmissionForm({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [skipping, setSkipping] = useState(false);
+  const [error, setError] = useState("");
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -34,6 +35,7 @@ export default function SubmissionForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setError("");
 
     try {
       if (task.submission_type === "image" && imageFile) {
@@ -54,7 +56,7 @@ export default function SubmissionForm({
         await onSubmit({ text });
       }
     } catch (err) {
-      console.error("Submission error:", err);
+      setError(err instanceof Error ? err.message : "Failed to submit. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -116,6 +118,10 @@ export default function SubmissionForm({
             className="w-full px-3 py-2 bg-surface-light border border-primary/30 rounded-xl text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary resize-none"
           />
         </div>
+      )}
+
+      {error && (
+        <p className="text-hard text-sm text-center">{error}</p>
       )}
 
       <div className="flex gap-3">
