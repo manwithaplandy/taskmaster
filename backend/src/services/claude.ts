@@ -3,7 +3,7 @@ import { GeneratedTask, TaskEvaluation } from "../lib/types";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-function parseJsonResponse<T>(text: string, context: string): T {
+export function parseJsonResponse<T>(text: string, context: string): T {
   // Try parsing the full text as JSON first
   try {
     return JSON.parse(text.trim());
