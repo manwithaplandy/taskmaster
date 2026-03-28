@@ -27,7 +27,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { username } },
+          options: {
+            data: { username },
+            emailRedirectTo: window.location.origin,
+          },
         });
         if (error) throw error;
       } else {
