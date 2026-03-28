@@ -37,7 +37,12 @@ export default function AuthForm({ mode }: AuthFormProps) {
         });
         if (error) throw error;
       }
-      router.push("/");
+
+      if (mode === "signup") {
+        router.push(`/signup/confirm?email=${encodeURIComponent(email)}`);
+      } else {
+        router.push("/");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
